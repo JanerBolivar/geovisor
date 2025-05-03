@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import GeoVisorSidebar from './components/GeoVisorSidebar';
 import GeoVisorMap from './components/GeoVisorMap';
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 function App() {
   // Estado para las capas activas
@@ -52,9 +53,14 @@ function App() {
 
   // Estado para controlar el sidebar en móviles
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  useEffect(() => {
+    setSidebarOpen(isDesktop);
+  }, [isDesktop]);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="relative h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
       <GeoVisorSidebar
         activeLayers={activeLayers}
@@ -66,10 +72,11 @@ function App() {
       />
 
       {/* Área principal del mapa */}
-      <main className="flex-1 relative overflow-hidden">
+      <main className="h-full w-full relative">
         <GeoVisorMap
           activeLayers={activeLayers}
           layerOpacity={layerOpacity}
+          sidebarOpen={sidebarOpen}
         />
       </main>
     </div>

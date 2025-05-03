@@ -12,7 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import LayerControl from "./LayerControl";
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -21,10 +21,11 @@ const GeoVisorSidebar = ({
     activeLayers,
     toggleLayer,
     layerOpacity,
-    setLayerOpacity
+    setLayerOpacity,
+    sidebarOpen,
+    setSidebarOpen
 }) => {
     const isDesktop = useMediaQuery("(min-width: 768px)");
-    const [sidebarOpen, setSidebarOpen] = useState(isDesktop);
 
     // Estado para las secciones expandidas
     const [expandedSections, setExpandedSections] = useState({
@@ -32,6 +33,15 @@ const GeoVisorSidebar = ({
         thematicLayers: true,
         stations: true
     });
+
+    // Efecto para manejar el estado inicial del sidebar
+    useEffect(() => {
+        if (isDesktop) {
+            setSidebarOpen(true);
+        } else {
+            setSidebarOpen(false);
+        }
+    }, [isDesktop, setSidebarOpen]);
 
     const toggleSection = (section) => {
         setExpandedSections(prev => ({
@@ -96,27 +106,33 @@ const GeoVisorSidebar = ({
 
     return (
         <>
-            {/* Botón para mostrar/ocultar sidebar en móvil */}
-            {!isDesktop && (
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="fixed top-4 left-4 z-50 md:hidden bg-white shadow-md"
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                >
-                    {sidebarOpen ? <X className="h-5 w-5 text-gray-700" /> : <Menu className="h-5 w-5 text-gray-700" />}
-                </Button>
-            )}
+            {/* Botón para mostrar/ocultar sidebar */}
+            <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                    "fixed top-4 left-4 z-[2000] bg-white shadow-md hover:bg-gray-100 transition-all",
+                    sidebarOpen && isDesktop ? "hidden" : "",
+                    sidebarOpen && !isDesktop ? "left-[17rem]" : "left-4"
+                )}
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+                {sidebarOpen ? (
+                    <X className="h-5 w-5 text-gray-700" />
+                ) : (
+                    <Menu className="h-5 w-5 text-gray-700" />
+                )}
+            </Button>
 
             {/* Sidebar */}
             <div
                 className={cn(
-                    "w-64 h-screen bg-white border-r border-gray-200 flex flex-col fixed md:relative z-40 transition-transform duration-300 shadow-sm",
+                    "w-64 h-screen bg-white border-r border-gray-200 flex flex-col fixed z-[1100] transition-transform duration-300",
                     sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
                 )}
             >
-                {/* Cabecera */}
-                <div className="p-4 border-b border-gray-200 bg-gray-50">
+                {/* Cabecera con botón de cerrar en móviles */}
+                <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8 bg-[#1E40AF]">
                             <AvatarImage src="/logo-ideam.png" />
@@ -127,6 +143,14 @@ const GeoVisorSidebar = ({
                             <p className="text-xs text-gray-500">Monitoreo de temperatura</p>
                         </div>
                     </div>
+                    {!isDesktop && (
+                        <button
+                            onClick={() => setSidebarOpen(false)}
+                            className="p-1 rounded-md hover:bg-gray-200"
+                        >
+                            <X className="h-4 w-4 text-gray-500" />
+                        </button>
+                    )}
                 </div>
 
                 {/* Sección de Capas Base */}
@@ -244,12 +268,12 @@ const GeoVisorSidebar = ({
                 <div className="p-4 border-t border-gray-200 bg-gray-50">
                     <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                            <AvatarImage src="https://github.com/shadcn.png" />
+                            <AvatarImage src="https://avatars.githubusercontent.com/u/101657362?v=4&size=64" />
                             <AvatarFallback>JM</AvatarFallback>
                         </Avatar>
                         <div>
-                            <p className="text-sm font-medium text-gray-800">Jener Muñoz</p>
-                            <p className="text-xs text-gray-500">jenermuoz@odis.edu.co</p>
+                            <p className="text-sm font-medium text-gray-800">Janer Muñoz</p>
+                            <p className="text-xs text-gray-500">jane.munoz@udla.edu.co</p>
                         </div>
                     </div>
                 </div>

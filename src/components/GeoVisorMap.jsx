@@ -2,7 +2,9 @@ import { MapContainer, TileLayer, LayersControl, GeoJSON, ZoomControl, useMap, P
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useState } from 'react';
+import { cn } from "@/lib/utils";
 import { fetchGeoJSONLayer, AVAILABLE_LAYERS } from '../services/geoServerService';
+import MarkerCluster from './MarkerCluster';
 
 // Fix para los iconos de marcadores 
 const FixLeafletIcons = () => {
@@ -43,14 +45,15 @@ const CenterMapButton = ({ center, zoom }) => {
     );
 };
 
-const GeoVisorMap = ({ activeLayers, layerOpacity }) => {
+const GeoVisorMap = ({ activeLayers, layerOpacity, sidebarOpen }) => {
     const [layersData, setLayersData] = useState({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [mapRef, setMapRef] = useState(null);
 
     // Coordenadas iniciales (Bogotá, Colombia)
-    const center = [4.7110, -74.0721];
-    const zoom = 6;
+    const center = [4.6263, -74.0816];
+    const zoom = 8;
 
     // Cargar capas cuando se activan
     useEffect(() => {
@@ -151,89 +154,114 @@ const GeoVisorMap = ({ activeLayers, layerOpacity }) => {
     return (
         <div className="w-full h-full relative">
             <FixLeafletIcons />
-            <MapContainer
-                center={center}
-                zoom={zoom}
-                style={{ height: '100%', width: '100%' }}
-                zoomControl={false}
-            >
-                {/* Definición de los panes */}
-                <Pane name={PANES.DEPARTAMENTOS} style={{ zIndex: 200 }} />
-                <Pane name={PANES.MUNICIPIOS} style={{ zIndex: 250 }} />
-                <Pane name={PANES.VEREDAS} style={{ zIndex: 300 }} />
-                <Pane name={PANES.CENTROS_POBLADOS} style={{ zIndex: 300 }} />
-                <Pane name={PANES.ESTACIONES} style={{ zIndex: 400 }} />
+            {/* Contenedor del mapa con margen para el sidebar */}
+            <div className={cn(
+                "absolute inset-0 transition-all duration-300",
+                sidebarOpen ? "md:ml-64" : ""
+            )}>
+                <MapContainer
+                    center={center}
+                    zoom={zoom}
+                    style={{ height: '100%', width: '100%' }}
+                    zoomControl={false}
+                    whenCreated={(map) => {
+                        setMapRef(map);
+                        setTimeout(() => map.invalidateSize(), 300);
+                    }}
+                    ref={(mapInstance) => {
+                        if (mapInstance) setMapRef(mapInstance);
+                    }}
+                >
+                    {/* Definición de los panes */}
+                    <Pane name={PANES.DEPARTAMENTOS} style={{ zIndex: 200 }} />
+                    <Pane name={PANES.MUNICIPIOS} style={{ zIndex: 250 }} />
+                    <Pane name={PANES.VEREDAS} style={{ zIndex: 300 }} />
+                    <Pane name={PANES.CENTROS_POBLADOS} style={{ zIndex: 300 }} />
+                    <Pane name={PANES.ESTACIONES} style={{ zIndex: 400 }} />
 
 
-                {/* Botón para volver al centro */}
-                <CenterMapButton center={center} zoom={zoom} />
-
-                {/* Controlador de zoom en la esquina inferior derecha */}
-                <ZoomControl position="bottomright" />
-
-                {/* Capa base OSM */}
-                {activeLayers.osm && (
-                    <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    />
-                )}
-
-                {/* Capa base Google Satellite */}
-                {activeLayers.googleSatellite && (
-                    <TileLayer
-                        url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-                        attribution='Google Satellite'
-                    />
-                )}
-
-                {/* Renderizar capas en orden específico */}
-                {layerOrder.map(layerId => {
-                    const style = layerStyles[layerId];
-                    if (!activeLayers[layerId] || !layersData[layerId]) return null;
-
-                    return (
-                        <GeoJSON
-                            key={layerId}
-                            data={layersData[layerId]}
-                            pane={style.pane}
-                            style={() => style.type === 'polygon' ?
-                                getPolygonStyle(style.color, layerOpacity[layerId] || 0.5) :
-                                getPointStyle(style.color, layerOpacity[layerId] || 1)
-                            }
-                            pointToLayer={style.type === 'point' ? (feature, latlng) => {
-                                return L.circleMarker(latlng, {
-                                    ...getPointStyle(style.color, layerOpacity[layerId] || 1),
-                                    pane: style.pane
-                                });
-                            } : undefined}
-                            onEachFeature={(feature, layer) => {
-                                layer.bindPopup(
-                                    Object.entries(feature.properties)
-                                        .map(([key, value]) => `<b>${key}:</b> ${value}`)
-                                        .join('<br>')
-                                );
-                            }}
-                        />
-                    );
-                })}
-
-                {/* LayersControl para toggle en la UI */}
-                <LayersControl position="topright">
-                    {Object.entries(layerStyles).map(([layerId, style]) => (
-                        <LayersControl.Overlay
-                            key={layerId}
-                            name={layerId.charAt(0).toUpperCase() + layerId.slice(1)}
-                            checked={activeLayers[layerId]}
+                    {/* Botón para volver al centro */}
+                    <div className="absolute bottom-[4.5rem] right-2 z-[1001]">
+                        <button
+                            className="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg hover:bg-gray-100 border border-gray-200"
+                            title="Centrar mapa"
+                            onClick={() => mapRef?.setView(center, zoom)}
                         >
-                            <div style={{ display: 'none' }}></div>
-                        </LayersControl.Overlay>
-                    ))}
-                </LayersControl>
-            </MapContainer>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {/* Controlador de zoom en la esquina inferior derecha */}
+                    <ZoomControl position="bottomright" />
+
+                    {/* Capa base OSM */}
+                    {activeLayers.osm && (
+                        <TileLayer
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        />
+                    )}
+
+                    {/* Capa base Google Satellite */}
+                    {activeLayers.googleSatellite && (
+                        <TileLayer
+                            url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+                            attribution='Google Satellite'
+                        />
+                    )}
+
+                    {/* Renderizar capas en orden específico */}
+                    {layerOrder.map(layerId => {
+                        const style = layerStyles[layerId];
+                        if (!activeLayers[layerId] || !layersData[layerId]) return null;
+
+                        if (layerId === 'estaciones') {
+                            return (
+                                <MarkerCluster
+                                    key={layerId}
+                                    map={mapRef}
+                                    data={layersData[layerId]}
+                                    pointStyle={getPointStyle(style.color, layerOpacity[layerId] || 1)}
+                                />
+                            );
+                        }
+
+                        return (
+                            <GeoJSON
+                                key={layerId}
+                                data={layersData[layerId]}
+                                pane={style.pane}
+                                style={() => getPolygonStyle(style.color, layerOpacity[layerId] || 0.5)}
+                                onEachFeature={(feature, layer) => {
+                                    layer.bindPopup(
+                                        Object.entries(feature.properties)
+                                            .map(([key, value]) => `<b>${key}:</b> ${value}`)
+                                            .join('<br>')
+                                    );
+                                }}
+                            />
+                        );
+                    })}
+
+                    {/* LayersControl para toggle en la UI */}
+                    <LayersControl position="topright">
+                        {Object.entries(layerStyles).map(([layerId, style]) => (
+                            <LayersControl.Overlay
+                                key={layerId}
+                                name={layerId.charAt(0).toUpperCase() + layerId.slice(1)}
+                                checked={activeLayers[layerId]}
+                            >
+                                <div style={{ display: 'none' }}></div>
+                            </LayersControl.Overlay>
+                        ))}
+                    </LayersControl>
+                </MapContainer>
+            </div>
 
             {/* Contenedor para los mensajes en el centro inferior */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col gap-2 z-[1000] w-64 md:w-72 lg:w-80">
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] flex flex-col gap-2 z-[1000] w-64 md:w-72 lg:w-80">
                 {/* Indicador de carga */}
                 {loading && (
                     <div className="bg-white p-2 rounded shadow-md w-full">
