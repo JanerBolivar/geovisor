@@ -135,7 +135,7 @@ const GeoVisorSidebar = ({
                 <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8 bg-[#1E40AF]">
-                            <AvatarImage src="/logo-ideam.png" />
+                            <AvatarImage src="/map_location_icon.png" />
                             <AvatarFallback className="text-white">ID</AvatarFallback>
                         </Avatar>
                         <div>

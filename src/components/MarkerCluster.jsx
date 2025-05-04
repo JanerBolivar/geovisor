@@ -1,69 +1,60 @@
 import { useEffect } from 'react';
 import L from 'leaflet';
-import 'leaflet.markercluster/dist/leaflet.markercluster';
+import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
-const MarkerCluster = ({ map, data, pointStyle }) => {
+// Componente para agrupar marcadores en clusters
+const MarkerCluster = ({ map, data, pointToLayer }) => {
     useEffect(() => {
-        if (!map || !data || !data.features || data.features.length === 0) {
-            console.log('No se puede renderizar clusters:', { map, data });
-            return;
-        }
+        if (!map || !data) return;
 
-        console.log('Datos recibidos para clustering:', data); // Debug
-
+        // Crear un grupo de marcadores clusterizados
         const markers = L.markerClusterGroup({
-            chunkedLoading: true,
             showCoverageOnHover: false,
             zoomToBoundsOnClick: true,
             spiderfyOnMaxZoom: true,
-            disableClusteringAtZoom: 15,
+            removeOutsideVisibleBounds: true,
+            maxClusterRadius: 80,
             iconCreateFunction: (cluster) => {
                 const count = cluster.getChildCount();
+                // Personalizar el icono del cluster según la cantidad de marcadores
+                let size = 'small';
+                if (count > 50) size = 'large';
+                else if (count > 10) size = 'medium';
+
                 return L.divIcon({
-                    html: `<div class="cluster-marker">${count}</div>`,
-                    className: 'marker-cluster-custom',
-                    iconSize: L.point(40, 40, true)
+                    html: `<div class="cluster-marker ${size}"><span>${count}</span></div>`,
+                    className: 'custom-cluster-icon',
+                    iconSize: L.point(40, 40)
                 });
             }
         });
 
-        // Validar estructura de datos
-        data.features.forEach(feature => {
-            if (!feature.geometry || !feature.geometry.coordinates) {
-                console.warn('Feature inválida:', feature);
-                return;
-            }
-
-            try {
-                const marker = L.circleMarker(
-                    [feature.geometry.coordinates[1], feature.geometry.coordinates[0]],
-                    {
-                        ...pointStyle,
-                        pane: 'estaciones-pane' // Asegurar que use el pane correcto
-                    }
-                ).bindPopup(
-                    Object.entries(feature.properties || {})
-                        .map(([key, value]) => `<b>${key}:</b> ${value}`)
-                        .join('<br>')
-                );
-                markers.addLayer(marker);
-            } catch (error) {
-                console.error('Error creando marcador:', error);
-            }
+        // Crear marcadores GeoJSON y añadirlos al cluster
+        const geoJsonLayer = L.geoJSON(data, {
+            pointToLayer: pointToLayer || ((feature, latlng) => {
+                // Si no se proporciona una función personalizada, usar marcador por defecto
+                return L.circleMarker(latlng, {
+                    radius: 6,
+                    fillColor: '#ff3366',
+                    color: '#333',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+            })
         });
 
+        // Añadir los marcadores al cluster y el cluster al mapa
+        markers.addLayer(geoJsonLayer);
         map.addLayer(markers);
-        console.log('Capas de cluster añadidas al mapa'); // Debug
 
+        // Cleanup al desmontar
         return () => {
-            if (map && markers) {
-                map.removeLayer(markers);
-                console.log('Capas de cluster removidas'); // Debug
-            }
+            map.removeLayer(markers);
         };
-    }, [map, data, pointStyle]);
+    }, [map, data, pointToLayer]);
 
     return null;
 };

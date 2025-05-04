@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { baseUrl, workspace } from '../config/envs';
 
-const BASE_URL = 'http://131.100.50.247:8085/geoserver/proyecto_lineab/ows';
+const BASE_URL = `${baseUrl}/${workspace}/ows?`;
 
 // Lista de capas disponibles
 export const AVAILABLE_LAYERS = {
@@ -22,7 +23,7 @@ export const fetchGeoJSONLayer = async (layerName) => {
                 typeName: `proyecto_lineab:${layerName}`,
                 outputFormat: 'application/json'
             },
-            timeout: 15000 // 15 segundos de timeout
+            timeout: 20000 // 20 segundos de timeout
         });
 
         if (response.status !== 200) {

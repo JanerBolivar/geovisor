@@ -1,12 +1,17 @@
 import { MapContainer, TileLayer, LayersControl, GeoJSON, ZoomControl, useMap, Pane } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+import 'leaflet-routing-machine';
 import L from 'leaflet';
 import { useEffect, useState } from 'react';
 import { cn } from "@/lib/utils";
 import { fetchGeoJSONLayer, AVAILABLE_LAYERS } from '../services/geoServerService';
 import MarkerCluster from './MarkerCluster';
+import ReactDOM from 'react-dom/client';
+import { createCustomPopup } from './CustomPopup';
+import { createStationPopup } from './StationPopup';
 
-// Fix para los iconos de marcadores 
+// Fix para los iconos de marcadores
 const FixLeafletIcons = () => {
     useEffect(() => {
         delete L.Icon.Default.prototype._getIconUrl;
@@ -19,30 +24,6 @@ const FixLeafletIcons = () => {
     }, []);
 
     return null;
-};
-
-// Componente para el botón de centrar mapa
-const CenterMapButton = ({ center, zoom }) => {
-    const map = useMap();
-
-    const handleCenterMap = () => {
-        map.setView(center, zoom);
-    };
-
-    return (
-        <div className="absolute bottom-24 right-2 z-[1000]">
-            <button
-                className="flex items-center justify-center w-8 h-8 bg-white rounded-md shadow-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                title="Volver al centro"
-                aria-label="Volver al centro"
-                onClick={handleCenterMap}
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                </svg>
-            </button>
-        </div>
-    );
 };
 
 const GeoVisorMap = ({ activeLayers, layerOpacity, sidebarOpen }) => {
@@ -150,6 +131,20 @@ const GeoVisorMap = ({ activeLayers, layerOpacity, sidebarOpen }) => {
 
     // Orden definido de las capas
     const layerOrder = ['departamentos', 'municipios', 'veredas', 'centrosPoblados', 'estaciones'];
+    
+    const createStationMarker = (feature, latlng) => {
+        const marker = L.circleMarker(latlng, getPointStyle(layerStyles.estaciones.color, layerOpacity.estaciones || 1));
+        
+        if (mapRef) {
+            setTimeout(() => {
+                createStationPopup(feature, marker);
+            }, 100);
+        } else {
+            createStationPopup(feature, marker);
+        }
+
+        return marker;
+    };
 
     return (
         <div className="w-full h-full relative">
@@ -217,17 +212,19 @@ const GeoVisorMap = ({ activeLayers, layerOpacity, sidebarOpen }) => {
                         const style = layerStyles[layerId];
                         if (!activeLayers[layerId] || !layersData[layerId]) return null;
 
+                        // Caso especial para estaciones: usando MarkerCluster con popup personalizado
                         if (layerId === 'estaciones') {
                             return (
                                 <MarkerCluster
                                     key={layerId}
                                     map={mapRef}
                                     data={layersData[layerId]}
-                                    pointStyle={getPointStyle(style.color, layerOpacity[layerId] || 1)}
+                                    pointToLayer={createStationMarker}  // Pasamos la función que crea los marcadores con el popup customizado
                                 />
                             );
                         }
 
+                        // Para el resto de las capas, usamos el popup existente
                         return (
                             <GeoJSON
                                 key={layerId}
@@ -235,11 +232,27 @@ const GeoVisorMap = ({ activeLayers, layerOpacity, sidebarOpen }) => {
                                 pane={style.pane}
                                 style={() => getPolygonStyle(style.color, layerOpacity[layerId] || 0.5)}
                                 onEachFeature={(feature, layer) => {
-                                    layer.bindPopup(
-                                        Object.entries(feature.properties)
-                                            .map(([key, value]) => `<b>${key}:</b> ${value}`)
-                                            .join('<br>')
-                                    );
+                                    // Usar el componente CustomPopup para mostrar la información
+                                    createCustomPopup(feature, layer, layerId);
+
+                                    // Añadir evento hover para resaltar el polígono
+                                    layer.on({
+                                        mouseover: (e) => {
+                                            const layer = e.target;
+                                            layer.setStyle({
+                                                weight: 3,
+                                                fillOpacity: layerOpacity[layerId] + 0.2,
+                                            });
+                                            layer.bringToFront();
+                                        },
+                                        mouseout: (e) => {
+                                            const layer = e.target;
+                                            layer.setStyle({
+                                                weight: 1,
+                                                fillOpacity: layerOpacity[layerId],
+                                            });
+                                        }
+                                    });
                                 }}
                             />
                         );
