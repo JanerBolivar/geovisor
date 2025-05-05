@@ -256,21 +256,15 @@ const StationPopup = ({ feature, map }) => {
 };
 
 // Función para crear un popup para estaciones
-export const createStationPopup = (feature, layer) => {
-    let mapInstance = null;
-
-    // Obtener la instancia del mapa
-    if (layer && layer._map) {
+export const createStationPopup = (feature, layer, mapInstance = null) => {
+    if (!mapInstance && layer && layer._map) {
         mapInstance = layer._map;
     }
 
     layer.bindPopup(() => {
-        // Crear un elemento DOM para el popup
         const popupElement = document.createElement('div');
-
         const root = ReactDOM.createRoot(popupElement);
         root.render(<StationPopup feature={feature} map={mapInstance} />);
-
         return popupElement;
     }, {
         maxWidth: 300,

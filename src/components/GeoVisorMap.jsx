@@ -3,7 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import 'leaflet-routing-machine';
 import L from 'leaflet';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { cn } from "@/lib/utils";
 import { fetchGeoJSONLayer, AVAILABLE_LAYERS } from '../services/geoServerService';
 import MarkerCluster from './MarkerCluster';
@@ -26,11 +26,22 @@ const FixLeafletIcons = () => {
     return null;
 };
 
-const GeoVisorMap = ({ activeLayers, layerOpacity, sidebarOpen }) => {
+const GeoVisorMap = ({
+    activeLayers,
+    layerOpacity,
+    sidebarOpen,
+    searchItems,
+    setSearchItems,
+    filterItems,
+    setFilterItems
+}) => {
     const [layersData, setLayersData] = useState({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [mapRef, setMapRef] = useState(null);
+    const [filteredStations, setFilteredStations] = useState(null);
+    const [highlightedStation, setHighlightedStation] = useState(null);
+    const [availableThematicLayers, setAvailableThematicLayers] = useState([]);
 
     // Coordenadas iniciales (Bogotá, Colombia)
     const center = [4.6263, -74.0816];
@@ -61,6 +72,16 @@ const GeoVisorMap = ({ activeLayers, layerOpacity, sidebarOpen }) => {
                 }
 
                 setLayersData(prev => ({ ...prev, ...newLayers }));
+
+                // Actualizar capas temáticas disponibles para filtrado
+                const thematicLayers = ['departamentos', 'municipios', 'centrosPoblados', 'veredas']
+                    .filter(layerId => newLayers[layerId])
+                    .map(layerId => ({
+                        value: layerId,
+                        label: layerId.charAt(0).toUpperCase() + layerId.slice(1)
+                    }));
+
+                setAvailableThematicLayers(thematicLayers);
             } catch (err) {
                 setError('Error al cargar algunas capas. Intente recargar la página.');
                 console.error('Error loading layers:', err);
@@ -91,12 +112,23 @@ const GeoVisorMap = ({ activeLayers, layerOpacity, sidebarOpen }) => {
         fillOpacity: opacity,
     });
 
+    // Estilo para estaciones resaltadas
+    const getHighlightedStyle = () => ({
+        radius: 8,
+        fillColor: '#FF0000',
+        color: '#000',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 1,
+        className: 'highlighted-station'
+    });
+
     // Definición de panes con z-index específico
     const PANES = {
         DEPARTAMENTOS: 'departamentos-pane',   // zIndex: 100 (fondo)
         MUNICIPIOS: 'municipios-pane',        // zIndex: 200
         VEREDAS: 'veredas-pane',              // zIndex: 300
-        CENTROS_POBLADOS: 'centros-pane',     // zIndex: 300 (mismo nivel que veredas)
+        CENTROS_POBLADOS: 'centros-pane',     // zIndex: 300
         ESTACIONES: 'estaciones-pane'         // zIndex: 400 (frente)
     };
 
@@ -131,16 +163,68 @@ const GeoVisorMap = ({ activeLayers, layerOpacity, sidebarOpen }) => {
 
     // Orden definido de las capas
     const layerOrder = ['departamentos', 'municipios', 'veredas', 'centrosPoblados', 'estaciones'];
-    
+
+    useEffect(() => {
+        if (!searchItems.term || !layersData.estaciones || searchItems.results !== "pending") return;
+
+        const term = searchItems.term.trim().toLowerCase();
+        const stations = layersData.estaciones.features;
+
+        const foundStation = stations.find(station => {
+            // Modificación para manejar guiones y espacios
+            const stationName = station.properties?.nom_emt?.toLowerCase().replace(/\s*-\s*/g, ' ');
+            const searchTerm = term.replace(/\s*-\s*/g, ' ');
+            return stationName?.includes(searchTerm);
+        });
+
+        if (foundStation) {
+            setSearchItems(prev => ({
+                ...prev,
+                results: {
+                    type: "FeatureCollection",
+                    features: [foundStation]
+                },
+                highlighted: foundStation
+            }));
+
+            const [lng, lat] = foundStation.geometry.coordinates;
+            mapRef?.flyTo([lat, lng], 14);
+        } else {
+            setSearchItems(prev => ({
+                ...prev,
+                results: null,
+                highlighted: null
+            }));
+
+            // Corrección para mostrar el popup correctamente
+            if (mapRef) {
+                L.popup()
+                    .setLatLng(mapRef.getCenter())
+                    .setContent(`No se encontró la estación: ${searchItems.term}`)
+                    .openOn(mapRef);
+            }
+        }
+    }, [searchItems.term, searchItems.results, layersData.estaciones, mapRef]);
+
     const createStationMarker = (feature, latlng) => {
-        const marker = L.circleMarker(latlng, getPointStyle(layerStyles.estaciones.color, layerOpacity.estaciones || 1));
-        
+        const isHighlighted = highlightedStation?.properties?.nom_emt === feature.properties.nom_emt;
+
+        const marker = L.circleMarker(
+            latlng,
+            isHighlighted ? getHighlightedStyle() : getPointStyle(layerStyles.estaciones.color, layerOpacity.estaciones || 1)
+        );
+
+        // Crear popup con referencia al mapa
         if (mapRef) {
             setTimeout(() => {
-                createStationPopup(feature, marker);
+                createStationPopup(feature, marker, mapRef);
             }, 100);
         } else {
-            createStationPopup(feature, marker);
+            createStationPopup(feature, marker, null);
+        }
+
+        if (isHighlighted) {
+            marker.bringToFront();
         }
 
         return marker;
@@ -173,7 +257,6 @@ const GeoVisorMap = ({ activeLayers, layerOpacity, sidebarOpen }) => {
                     <Pane name={PANES.VEREDAS} style={{ zIndex: 300 }} />
                     <Pane name={PANES.CENTROS_POBLADOS} style={{ zIndex: 300 }} />
                     <Pane name={PANES.ESTACIONES} style={{ zIndex: 400 }} />
-
 
                     {/* Botón para volver al centro */}
                     <div className="absolute bottom-[4.5rem] right-2 z-[1001]">
@@ -214,12 +297,13 @@ const GeoVisorMap = ({ activeLayers, layerOpacity, sidebarOpen }) => {
 
                         // Caso especial para estaciones: usando MarkerCluster con popup personalizado
                         if (layerId === 'estaciones') {
+                            const dataToShow = filteredStations || layersData[layerId];
                             return (
                                 <MarkerCluster
                                     key={layerId}
                                     map={mapRef}
-                                    data={layersData[layerId]}
-                                    pointToLayer={createStationMarker}  // Pasamos la función que crea los marcadores con el popup customizado
+                                    data={dataToShow}
+                                    pointToLayer={createStationMarker}
                                 />
                             );
                         }

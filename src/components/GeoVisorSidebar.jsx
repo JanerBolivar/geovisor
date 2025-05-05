@@ -6,8 +6,8 @@ import {
     Map as MapIcon,
     Menu,
     X,
-    Info,
-    Settings
+    Search,
+    Filter
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -16,6 +16,7 @@ import { useState, useEffect } from "react";
 import LayerControl from "./LayerControl";
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { Combobox } from "./Combobox";
 
 const GeoVisorSidebar = ({
     activeLayers,
@@ -23,12 +24,16 @@ const GeoVisorSidebar = ({
     layerOpacity,
     setLayerOpacity,
     sidebarOpen,
-    setSidebarOpen
+    setSidebarOpen,
+    searchItems,
+    setSearchItems,
+    filterItems,
+    setFilterItems
 }) => {
     const isDesktop = useMediaQuery("(min-width: 768px)");
-
-    // Estado para las secciones expandidas
+    const [selectedFilter, setSelectedFilter] = useState(null);
     const [expandedSections, setExpandedSections] = useState({
+        searchAndFilter: true,
         baseLayers: true,
         thematicLayers: true,
         stations: true
@@ -48,6 +53,63 @@ const GeoVisorSidebar = ({
             ...prev,
             [section]: !prev[section]
         }));
+    };
+
+    // Función para buscar estaciones por nombre
+    const searchStation = (term) => {
+        if (!term?.trim()) {
+            setSearchItems({
+                term: "",
+                results: null,
+                highlighted: null
+            });
+            return;
+        }
+
+        setSearchItems(prev => ({
+            ...prev,
+            term: term,
+            results: "pending",
+            highlighted: null
+        }));
+    };
+
+    // Función para filtrar estaciones por capa temática
+    const filterStations = (layerId) => {
+        if (!layerId) {
+            setFilterItems({
+                layerId: null,
+                results: null
+            });
+            return;
+        }
+
+        setFilterItems({
+            layerId: layerId,
+            results: "pending"
+        });
+    };
+
+    // Función para limpiar la búsqueda
+    const clearSearch = () => {
+        setSearchItems({
+            term: "",
+            results: null,
+            highlighted: null
+        });
+        setFilterItems({
+            layerId: null,
+            results: null
+        });
+        console.log('clearSearch' + searchItems.term);
+    };
+
+    const handleSearch = () => {
+        searchStation(searchItems.term);
+    };
+
+    const handleFilterChange = (layerId) => {
+        filterStations(layerId);
     };
 
     // Configuración de capas base
@@ -152,6 +214,79 @@ const GeoVisorSidebar = ({
                         </button>
                     )}
                 </div>
+
+                {/* SECCIÓN: Buscador y filtro */}
+                <div className="p-2 border-b border-gray-200">
+                    <button
+                        onClick={() => toggleSection('searchAndFilter')}
+                        className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded text-gray-700"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Search className="h-4 w-4 text-gray-600" />
+                            <span>Buscar y Filtrar</span>
+                        </div>
+                        {expandedSections.searchAndFilter ? (
+                            <ChevronDown className="h-4 w-4 text-gray-500" />
+                        ) : (
+                            <ChevronRight className="h-4 w-4 text-gray-500" />
+                        )}
+                    </button>
+
+                    {expandedSections.searchAndFilter && (
+                        <div className="space-y-3 mt-2 px-2">
+                            {/* Campo de búsqueda existente */}
+                            <div>
+                                <label htmlFor="stationSearch" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Buscar estación
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        id="stationSearch"
+                                        type="text"
+                                        placeholder="Nombre de estación..."
+                                        className="w-full p-2 text-sm text-gray-800 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        value={searchItems.term}
+                                        onChange={(e) => setSearchItems(prev => ({ ...prev, term: e.target.value }))}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleSearch}
+                                        className="text-gray-800 hover:text-gray-900"
+                                    >
+                                        <Search className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={clearSearch}
+                                        className="text-gray-800 hover:text-gray-900"
+                                        disabled={!searchItems.term}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Filtro por capa temática existente */}
+                            <div>
+                                <label htmlFor="layerFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Filtrar por área geográfica
+                                </label>
+                                {/*<Combobox
+                                    id="layerFilter"
+                                    options={availableThematicLayers}
+                                    selectedOption={selectedFilter}
+                                    onSelect={handleFilterChange}
+                                    placeholder="Selecciona una capa..."
+                                />*/}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <Separator className="bg-gray-200" />
 
                 {/* Sección de Capas Base */}
                 <div className="p-2">
