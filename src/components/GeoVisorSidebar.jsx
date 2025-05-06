@@ -192,7 +192,7 @@ const GeoVisorSidebar = ({
                 )}
             >
                 {/* Cabecera con botón de cerrar en móviles */}
-                <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8 bg-[#1E40AF]">
                             <AvatarImage src="/map_location_icon.png" />
@@ -213,192 +213,193 @@ const GeoVisorSidebar = ({
                     )}
                 </div>
 
-                {/* SECCIÓN: Buscador y filtro */}
-                <div className="p-2 border-b border-gray-200">
-                    <button
-                        onClick={() => toggleSection('searchAndFilter')}
-                        className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded text-gray-700"
-                    >
-                        <div className="flex items-center gap-2">
-                            <Search className="h-4 w-4 text-gray-600" />
-                            <span>Buscar y Filtrar</span>
-                        </div>
-                        {expandedSections.searchAndFilter ? (
-                            <ChevronDown className="h-4 w-4 text-gray-500" />
-                        ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-500" />
-                        )}
-                    </button>
+                {/* Contenedor con scroll para el contenido principal del sidebar */}
+                <div className="flex-1 overflow-y-auto">
+                    {/* SECCIÓN: Buscador y filtro */}
+                    <div className="p-2 border-b border-gray-200">
+                        <button
+                            onClick={() => toggleSection('searchAndFilter')}
+                            className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded text-gray-700"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Search className="h-4 w-4 text-gray-600" />
+                                <span>Buscar y Filtrar</span>
+                            </div>
+                            {expandedSections.searchAndFilter ? (
+                                <ChevronDown className="h-4 w-4 text-gray-500" />
+                            ) : (
+                                <ChevronRight className="h-4 w-4 text-gray-500" />
+                            )}
+                        </button>
 
-                    {expandedSections.searchAndFilter && (
-                        <div className="space-y-3 mt-2 px-2">
-                            {/* Campo de búsqueda existente */}
-                            <div>
-                                <label htmlFor="stationSearch" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Buscar estación
-                                </label>
-                                <div className="flex gap-2">
-                                    <input
-                                        id="stationSearch"
-                                        type="text"
-                                        placeholder="Nombre de estación..."
-                                        className="w-full p-2 text-sm text-gray-800 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        value={searchItems.term}
-                                        onChange={(e) => setSearchItems(prev => ({ ...prev, term: e.target.value }))}
-                                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                    />
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleSearch}
-                                        className="text-gray-800 hover:text-gray-900"
-                                    >
-                                        <Search className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={clearSearch}
-                                        className="text-gray-800 hover:text-gray-900"
-                                        disabled={!searchItems.term}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
+                        {expandedSections.searchAndFilter && (
+                            <div className="space-y-3 mt-2 px-2">
+                                {/* Campo de búsqueda existente */}
+                                <div>
+                                    <label htmlFor="stationSearch" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Buscar estación
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            id="stationSearch"
+                                            type="text"
+                                            placeholder="Nombre de estación..."
+                                            className="w-full p-2 text-sm text-gray-800 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            value={searchItems.term}
+                                            onChange={(e) => setSearchItems(prev => ({ ...prev, term: e.target.value }))}
+                                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleSearch}
+                                            className="text-gray-800 hover:text-gray-900"
+                                        >
+                                            <Search className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={clearSearch}
+                                            className="text-gray-800 hover:text-gray-900"
+                                            disabled={!searchItems.term}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Filtro por capa temática existente */}
+                                <div>
+                                    <label htmlFor="layerFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Filtrar por área geográfica
+                                    </label>
+                                    {/*<Combobox
+                                        id="layerFilter"
+                                        options={availableThematicLayers}
+                                        selectedOption={selectedFilter}
+                                        onSelect={handleFilterChange}
+                                        placeholder="Selecciona una capa..."
+                                    />*/}
                                 </div>
                             </div>
+                        )}
+                    </div>
 
-                            {/* Filtro por capa temática existente */}
-                            <div>
-                                <label htmlFor="layerFilter" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Filtrar por área geográfica
-                                </label>
-                                {/*<Combobox
-                                    id="layerFilter"
-                                    options={availableThematicLayers}
-                                    selectedOption={selectedFilter}
-                                    onSelect={handleFilterChange}
-                                    placeholder="Selecciona una capa..."
-                                />*/}
+                    <Separator className="bg-gray-200" />
+
+                    {/* Sección de Capas Base */}
+                    <div className="p-2">
+                        <button
+                            onClick={() => toggleSection('baseLayers')}
+                            className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded text-gray-700"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Layers className="h-4 w-4 text-gray-600" />
+                                <span>Capas Base</span>
                             </div>
-                        </div>
-                    )}
-                </div>
+                            {expandedSections.baseLayers ? (
+                                <ChevronDown className="h-4 w-4 text-gray-500" />
+                            ) : (
+                                <ChevronRight className="h-4 w-4 text-gray-500" />
+                            )}
+                        </button>
 
-                <Separator className="bg-gray-200" />
-
-                {/* Sección de Capas Base */}
-                <div className="p-2">
-                    <button
-                        onClick={() => toggleSection('baseLayers')}
-                        className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded text-gray-700"
-                    >
-                        <div className="flex items-center gap-2">
-                            <Layers className="h-4 w-4 text-gray-600" />
-                            <span>Capas Base</span>
-                        </div>
-                        {expandedSections.baseLayers ? (
-                            <ChevronDown className="h-4 w-4 text-gray-500" />
-                        ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-500" />
+                        {expandedSections.baseLayers && (
+                            <div className="pl-6 space-y-2 mt-2">
+                                {baseLayers.map(layer => (
+                                    <LayerControl
+                                        key={layer.id}
+                                        name={layer.name}
+                                        type={layer.type}
+                                        isActive={activeLayers[layer.id]}
+                                        onToggle={() => toggleLayer(layer.id)}
+                                        opacity={1}
+                                        color="#3b82f6"
+                                        showControls={false}
+                                    />
+                                ))}
+                            </div>
                         )}
-                    </button>
+                    </div>
 
-                    {expandedSections.baseLayers && (
-                        <div className="pl-6 space-y-2 mt-2">
-                            {baseLayers.map(layer => (
-                                <LayerControl
-                                    key={layer.id}
-                                    name={layer.name}
-                                    type={layer.type}
-                                    isActive={activeLayers[layer.id]}
-                                    onToggle={() => toggleLayer(layer.id)}
-                                    opacity={1}
-                                    color="#3b82f6"
-                                    showControls={false}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </div>
+                    <Separator className="bg-gray-200" />
 
-                <Separator className="bg-gray-200" />
+                    {/* Sección de Capas Temáticas */}
+                    <div className="p-2">
+                        <button
+                            onClick={() => toggleSection('thematicLayers')}
+                            className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded text-gray-700"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Layers className="h-4 w-4 text-gray-600" />
+                                <span>Capas Temáticas</span>
+                            </div>
+                            {expandedSections.thematicLayers ? (
+                                <ChevronDown className="h-4 w-4 text-gray-500" />
+                            ) : (
+                                <ChevronRight className="h-4 w-4 text-gray-500" />
+                            )}
+                        </button>
 
-                {/* Sección de Capas Temáticas */}
-                <div className="p-2">
-                    <button
-                        onClick={() => toggleSection('thematicLayers')}
-                        className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded text-gray-700"
-                    >
-                        <div className="flex items-center gap-2">
-                            <Layers className="h-4 w-4 text-gray-600" />
-                            <span>Capas Temáticas</span>
-                        </div>
-                        {expandedSections.thematicLayers ? (
-                            <ChevronDown className="h-4 w-4 text-gray-500" />
-                        ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-500" />
+                        {expandedSections.thematicLayers && (
+                            <div className="pl-6 space-y-2 mt-2">
+                                {thematicLayers.map(layer => (
+                                    <LayerControl
+                                        key={layer.id}
+                                        name={layer.name}
+                                        type={layer.type}
+                                        color={layer.color}
+                                        isActive={activeLayers[layer.id]}
+                                        onToggle={() => toggleLayer(layer.id)}
+                                        opacity={layerOpacity[layer.id] || 0.7}
+                                        onOpacityChange={(value) => setLayerOpacity(layer.id, value)}
+                                        showControls={true}
+                                    />
+                                ))}
+                            </div>
                         )}
-                    </button>
+                    </div>
 
-                    {expandedSections.thematicLayers && (
-                        <div className="pl-6 space-y-2 mt-2">
-                            {thematicLayers.map(layer => (
-                                <LayerControl
-                                    key={layer.id}
-                                    name={layer.name}
-                                    type={layer.type}
-                                    color={layer.color}
-                                    isActive={activeLayers[layer.id]}
-                                    onToggle={() => toggleLayer(layer.id)}
-                                    opacity={layerOpacity[layer.id] || 0.7}
-                                    onOpacityChange={(value) => setLayerOpacity(layer.id, value)}
-                                    showControls={true}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </div>
+                    {/* Sección de Estaciones */}
+                    <div className="p-2">
+                        <button
+                            onClick={() => toggleSection('stations')}
+                            className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded text-gray-700"
+                        >
+                            <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-gray-600" />
+                                <span>Estaciones</span>
+                            </div>
+                            {expandedSections.stations ? (
+                                <ChevronDown className="h-4 w-4 text-gray-500" />
+                            ) : (
+                                <ChevronRight className="h-4 w-4 text-gray-500" />
+                            )}
+                        </button>
 
-                {/* Sección de Estaciones */}
-                <div className="p-2">
-                    <button
-                        onClick={() => toggleSection('stations')}
-                        className="w-full flex items-center justify-between p-2 hover:bg-gray-50 rounded text-gray-700"
-                    >
-                        <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-gray-600" />
-                            <span>Estaciones</span>
-                        </div>
-                        {expandedSections.stations ? (
-                            <ChevronDown className="h-4 w-4 text-gray-500" />
-                        ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-500" />
+                        {expandedSections.stations && (
+                            <div className="pl-6 space-y-2 mt-2">
+                                {stationLayers.map(layer => (
+                                    <LayerControl
+                                        key={layer.id}
+                                        name={layer.name}
+                                        type={layer.type}
+                                        color={layer.color}
+                                        isActive={activeLayers[layer.id]}
+                                        onToggle={() => toggleLayer(layer.id)}
+                                        opacity={layerOpacity[layer.id] || 1}
+                                        onOpacityChange={(value) => setLayerOpacity(layer.id, value)}
+                                        showControls={true}
+                                    />
+                                ))}
+                            </div>
                         )}
-                    </button>
-
-                    {expandedSections.stations && (
-                        <div className="pl-6 space-y-2 mt-2">
-                            {stationLayers.map(layer => (
-                                <LayerControl
-                                    key={layer.id}
-                                    name={layer.name}
-                                    type={layer.type}
-                                    color={layer.color}
-                                    isActive={activeLayers[layer.id]}
-                                    onToggle={() => toggleLayer(layer.id)}
-                                    opacity={layerOpacity[layer.id] || 1}
-                                    onOpacityChange={(value) => setLayerOpacity(layer.id, value)}
-                                    showControls={true}
-                                />
-                            ))}
-                        </div>
-                    )}
+                    </div>
                 </div>
-
-                <div className="flex-1" />
 
                 {/* Pie de página - Usuario */}
-                <div className="p-4 border-t border-gray-200 bg-gray-50">
+                <div className="p-4 border-t border-gray-200 bg-gray-50 shrink-0">
                     <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                             <AvatarImage src="https://avatars.githubusercontent.com/u/101657362?v=4&size=64" />
