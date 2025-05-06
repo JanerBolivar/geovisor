@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, LayersControl, GeoJSON, ZoomControl, useMap, Pane } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, ZoomControl, useMap, Pane } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import 'leaflet-routing-machine';
@@ -42,6 +42,7 @@ const GeoVisorMap = ({
     const [filteredStations, setFilteredStations] = useState(null);
     const [highlightedStation, setHighlightedStation] = useState(null);
     const [availableThematicLayers, setAvailableThematicLayers] = useState([]);
+    const [legendVisible, setLegendVisible] = useState(false);
 
     // Coordenadas iniciales (Bogotá, Colombia)
     const center = [4.6263, -74.0816];
@@ -137,32 +138,48 @@ const GeoVisorMap = ({
         departamentos: {
             color: '#FF5733',
             type: 'polygon',
-            pane: PANES.DEPARTAMENTOS
+            pane: PANES.DEPARTAMENTOS,
+            label: 'Departamentos'
         },
         municipios: {
             color: '#3366FF',
             type: 'polygon',
-            pane: PANES.MUNICIPIOS
+            pane: PANES.MUNICIPIOS,
+            label: 'Municipios'
         },
         centrosPoblados: {
             color: '#33FF57',
             type: 'polygon',
-            pane: PANES.CENTROS_POBLADOS
+            pane: PANES.CENTROS_POBLADOS,
+            label: 'Centros Poblados'
         },
         veredas: {
             color: '#FFFF33',
             type: 'polygon',
-            pane: PANES.VEREDAS
+            pane: PANES.VEREDAS,
+            label: 'Veredas'
         },
         estaciones: {
             color: '#FF3366',
             type: 'point',
-            pane: PANES.ESTACIONES
+            pane: PANES.ESTACIONES,
+            label: 'Estaciones'
+        },
+        osm: {
+            label: 'OpenStreetMap'
+        },
+        googleSatellite: {
+            label: 'Google Satellite'
         }
     };
 
     // Orden definido de las capas
     const layerOrder = ['departamentos', 'municipios', 'veredas', 'centrosPoblados', 'estaciones'];
+
+    // Toggle para la visibilidad de la leyenda
+    const toggleLegend = () => {
+        setLegendVisible(!legendVisible);
+    };
 
     useEffect(() => {
         if (!searchItems.term || !layersData.estaciones || searchItems.results !== "pending") return;
@@ -341,21 +358,110 @@ const GeoVisorMap = ({
                             />
                         );
                     })}
-
-                    {/* LayersControl para toggle en la UI */}
-                    <LayersControl position="topright">
-                        {Object.entries(layerStyles).map(([layerId, style]) => (
-                            <LayersControl.Overlay
-                                key={layerId}
-                                name={layerId.charAt(0).toUpperCase() + layerId.slice(1)}
-                                checked={activeLayers[layerId]}
-                            >
-                                <div style={{ display: 'none' }}></div>
-                            </LayersControl.Overlay>
-                        ))}
-                    </LayersControl>
                 </MapContainer>
             </div>
+
+            {/* Botón para mostrar/ocultar leyenda (en reemplazo del control de capas original) */}
+            <div className="absolute top-2 right-2 z-[1001]">
+                <button
+                    className="flex items-center justify-center w-10 h-10 bg-white rounded-md shadow-lg hover:bg-gray-100 border border-gray-200"
+                    title="Mostrar/Ocultar Leyenda"
+                    onClick={toggleLegend}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                    </svg>
+                </button>
+            </div>
+
+            {/* Leyenda de capas */}
+            {legendVisible && (
+                <div className="absolute top-14 right-2 z-[1001] bg-white rounded-md shadow-lg p-3 max-w-xs w-full md:w-64 lg:w-72 transition-all duration-300 transform">
+                    <div className="flex justify-between items-center mb-2 border-b pb-2">
+                        <h3 className="font-medium text-gray-800">Leyenda de Capas</h3>
+                        <button
+                            className="text-gray-500 hover:text-gray-700"
+                            onClick={toggleLegend}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {/* Sección de capas base */}
+                    <div className="mb-3">
+                        <h4 className="text-sm font-medium text-gray-700 mb-1">Capas Base</h4>
+                        <div className="space-y-1">
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="layer-osm"
+                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    checked={activeLayers.osm}
+                                    onChange={() => { }}
+                                    disabled
+                                />
+                                <label htmlFor="layer-osm" className="ml-2 text-sm text-gray-700">
+                                    {layerStyles.osm.label}
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="layer-satellite"
+                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    checked={activeLayers.googleSatellite}
+                                    onChange={() => { }}
+                                    disabled
+                                />
+                                <label htmlFor="layer-satellite" className="ml-2 text-sm text-gray-700">
+                                    {layerStyles.googleSatellite.label}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sección de capas temáticas */}
+                    <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-1">Capas Temáticas</h4>
+                        <div className="space-y-2">
+                            {layerOrder.map(layerId => {
+                                const style = layerStyles[layerId];
+                                if (!style) return null;
+
+                                return (
+                                    <div key={layerId} className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            id={`layer-${layerId}`}
+                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            checked={activeLayers[layerId]}
+                                            onChange={() => { }}
+                                            disabled
+                                        />
+                                        <label htmlFor={`layer-${layerId}`} className="ml-2 text-sm text-gray-700 flex items-center">
+                                            <span
+                                                className="inline-block w-4 h-4 mr-2"
+                                                style={{
+                                                    backgroundColor: style.color,
+                                                    borderRadius: style.type === 'point' ? '50%' : '0'
+                                                }}
+                                            ></span>
+                                            {style.label}
+                                        </label>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Nota informativa */}
+                    <div className="mt-3 text-xs text-gray-500 italic">
+                        Para activar/desactivar capas, use el panel de control.
+                    </div>
+                </div>
+            )}
 
             {/* Contenedor para los mensajes en el centro inferior */}
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] flex flex-col gap-2 z-[1000] w-64 md:w-72 lg:w-80">

@@ -169,22 +169,20 @@ const GeoVisorSidebar = ({
     return (
         <>
             {/* Botón para mostrar/ocultar sidebar */}
-            <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                    "fixed top-4 left-4 z-[2000] bg-white shadow-md hover:bg-gray-100 transition-all",
-                    sidebarOpen && isDesktop ? "hidden" : "",
-                    sidebarOpen && !isDesktop ? "left-[17rem]" : "left-4"
-                )}
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-            >
-                {sidebarOpen ? (
-                    <X className="h-5 w-5 text-gray-700" />
-                ) : (
+            {!sidebarOpen && (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                        "fixed top-4 left-4 z-[2000] bg-white shadow-md hover:bg-gray-100 transition-all",
+                        sidebarOpen && isDesktop ? "hidden" : "",
+                        sidebarOpen && !isDesktop ? "left-[17rem]" : "left-4"
+                    )}
+                    onClick={() => setSidebarOpen(true)}
+                >
                     <Menu className="h-5 w-5 text-gray-700" />
-                )}
-            </Button>
+                </Button>
+            )}
 
             {/* Sidebar */}
             <div
